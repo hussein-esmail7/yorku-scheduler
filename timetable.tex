@@ -1,0 +1,99 @@
+% TODO: THIS TEMPLATE IS A WORK IN PROGRESS
+
+% [FILENAME]
+% Author: Hussein Esmail
+% Created: [DATE]
+% Updated: [DATE]
+% Description: [DESCRIPTION]
+
+% This part is used for https://github.com/hussein-esmail7/template-maker
+% templateDescription: 7 - Timetable Schedule LaTeX Template
+
+% This file can be found at https://github.com/hussein-esmail7/templates
+
+% =========================== Variables ===========================
+\def\myAuthor			{\href{https://github.com/hussein-esmail7/yorku-scheduler}{Program written by Hussein Esmail}\footnote{\href{https://github.com/hussein-esmail7/yorku-scheduler}{https://github.com/hussein-esmail7/yorku-scheduler}}}
+\def\mySubject			{PDF Subject Here}  % Used for Metadata
+\def\myKeywords			{PDF Keywords Here} % Separated by comma
+\def\myTitle			{[TITLE]}
+% =========================== Variables ===========================
+
+% =========================== Shortcuts ===========================
+\def\bg{backgroundcolor}
+\def\len{\setlength}
+\newcommand{\image}[1]{[\textbf{IMAGE MISSING #1}]} % #1 is the descriptor about the image
+\newenvironment{itemize*}{\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}{\end{itemize}}
+\newenvironment{enumerate*}{\begin{enumerate}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}{\end{enumerate}}
+\newenvironment{enumalph*}{\begin{enumerate}[label=\alph*.]\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}{\end{enumerate}}
+\newenvironment{enumq*}{\begin{enumerate}[label=Q{{\arabic*}}.]\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}{\end{enumerate}}
+\newcommand{\TODO}[1]{\todo[backgroundcolor=none, linecolor=red]{#1}}
+\newcommand{\TODOimg}[1]{\todo[inline, \bg=gray]{\textbf{IMG}: #1}}
+\newcommand{\TODOcontent}[1]{\todo[\bg=red, linecolor=red]{\textbf{CON}: #1}}
+\newcommand{\TODOfig}[1]{\todo[inline, \bg=orange]{\textbf{FIG}: #1}}
+% =========================== Shortcuts ===========================
+
+\documentclass{article}
+\title{\vspace{-3cm} \\ \myTitle}
+\author{\myAuthor}
+\date{ }
+
+\usepackage[colorinlistoftodos]{todonotes}	% Used for "to do" notes
+\usepackage{amssymb}	% Used for math symbols
+\usepackage{comment}	% Used for the 'comment' environment (multi-line)
+\usepackage{enumitem}	% Used for enumalpha environment
+\usepackage{float}		% Used for ``H'' flag in figure environment
+\usepackage{graphicx}   % Used for adding images
+\usepackage{listings}   % Used for blocks of code
+\usepackage{longtable}	% Used to format longtables properly
+\usepackage{multirow}
+\usepackage{schedule}	% Used to make the schedule
+\usepackage{xcolor}
+
+\usepackage{hyperref}   % Used for adding PDF metadata
+
+\graphicspath{{./}}     % Import images that are in the same folder as this .tex file
+
+\hypersetup{
+    colorlinks=true,
+	urlcolor=blue,		% URL colors (\href{}{})
+	linkcolor=black,	% Table of Contents text color. Used for TOC body only
+    pdfborder={0 0 0},
+    pdftitle={\myTitle},
+    pdfauthor={\myAuthor},
+    pdfsubject={\mySubject},
+    pdfkeywords={\myKeywords}
+}
+
+\lstset{        % Coding block configuration
+  basicstyle=\ttfamily,
+  frame=single,
+  breaklines=true
+}
+
+% Prevent word hyphenation
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\begin{document}        % Official beginning of the document.
+\pagenumbering{gobble}  % No page numbers
+\maketitle              % Make title page
+
+\CellHeight{.4in}
+\CellWidth{1in}
+\TimeRange{8:00-19:00}
+\SubUnits{30}
+\BeginOn{Monday}
+% \TextSize{\tiny}
+\FiveDay
+\TwelveHour
+\NewAppointment{LECT}{pink}{black}
+\NewAppointment{TUTR}{lightgray}{black}
+\NewAppointment{LAB}{lightgray}{black}
+
+\begin{schedule}% [Fall Quarter, 1997]
+	% NOTE: [CLASSES START]
+	% NOTE: [CLASSES END]
+\end{schedule}
+\end{document}
