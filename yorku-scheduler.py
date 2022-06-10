@@ -58,7 +58,7 @@ def yes_or_no(str_ask):
 
 def main():
     # ========= VARIABLES ===========
-    FILENAME_OUTPUT = "test.tex" # TODO: Ask this user input
+    FILENAME_OUTPUT = "test.tex"
     index_insert = -1 # Index of where to put formatted LaTeX lines in the template file
 
     # Check the template file is where it should be before asking user questions
@@ -100,7 +100,7 @@ def main():
         # For every course
         for section in course["Sections"]:
             # For all sections in the course
-            for type in ["LECT", "TUTR", "LAB"]:
+            for type in ["LECT", "TUTR", "LAB", "SEMR"]:
                 # Iterate through all the lectures, tutorials, labs it may have
                 # This loop is not a query loop per se
                 for meeting in section[type]:
@@ -108,7 +108,7 @@ def main():
                         # If this item is in that room
                         num_meetings_query += 1
                         num = ""
-                        if type != "LECT":
+                        if type != "LECT" and type != "SEMR":
                             num = " " + meeting["Num"]
                         # print(f"{course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type} {num}{meeting['Day']} {meeting['Time']} for {meeting['Duration']} minutes.")
                         weekday_formatted = meeting["Day"]
