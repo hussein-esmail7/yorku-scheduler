@@ -3,10 +3,12 @@ Formats output from yorku-class-scraper to a timetable PDF
 
 ## Table of Contents
 - [What is this?](#what-is-this)
+    - [Why is this a separate program?](#why-is-this-a-separate-program)
 - [Requirements](#requirements)
 - [Installation](#installation)
     - [Installing Through Git](#installing-through-git)
 - [Running the Program](#running-the-program)
+- [Arguments](#arguments)
 - [Donate](#donate)
 
 ## What is this?
