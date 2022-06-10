@@ -58,10 +58,15 @@ def yes_or_no(str_ask):
 
 def main():
     # ========= VARIABLES ===========
-    FILENAME_OUTPUT = "test.tex"
-    index_insert = -1 # Index of where to put formatted LaTeX lines in the template file
+    FILENAME_OUTPUT = "test.tex" # LaTeX file name. User changes this later
+    PATH_JSON = "" # Path of JSON file will be here
+    index_insert = -1 # Index where to put new LaTeX lines in the template file
+    num_meetings_query = 0 # How many results there are
+    #   The above variable is useful because if there's 0 queries, there's no
+    #   point of making a `.tex` file.
+    arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
 
-    # Check the template file is where it should be before asking user questions
+    # Check the template file location is correct before asking user questions
     if not os.path.exists(PATH_TEMPLATE):
         print(f"{str_prefix_err} Template file does not exist at location!")
         sys.exit(1)
@@ -73,7 +78,6 @@ def main():
         print(f"{str_prefix_err} No insert line in template file! Expected: '{LINE_INSERT}'")
         sys.exit()
     # Ask for JSON file path
-    PATH_JSON = ""
     while not os.path.exists(os.path.expanduser(PATH_JSON)):
         # Keep asking for a path until it gets a valid one
         PATH_JSON = input(f"{str_prefix_q} Path of the JSON file: ")
@@ -94,8 +98,6 @@ def main():
         bool_location_confirmed = yes_or_no(f"Is '{location}' correct? ")
 
     # Iterate the JSON and return the matching items
-    num_meetings_query = 0
-    arr_latex_newlines = []
     for course in DATA:
         # For every course
         for section in course["Sections"]:
@@ -115,25 +117,21 @@ def main():
                         if weekday_formatted == "R":
                             weekday_formatted = "Th"
                         # Calculate ending time
-                        t_start_hour = meeting["Time"].split(":")[0]
-                        t_start_min  = meeting["Time"].split(":")[1]
-                        if len(t_start_hour) == 1:
-                            t_start_hour = "0" + t_start_hour
-
-                        t_start = datetime.datetime.strptime(t_start_hour + ":" + t_start_min, "%H:%M")
-                        t_end = t_start + datetime.timedelta(minutes=int(meeting["Duration"]))
-                        time_formatted = meeting["Time"] + "-" + str(int(t_end.strftime("%H"))) + ":" + str(t_end.strftime("%M"))
-                        command_string = "\t\\" + type + "{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}{" + type + num + "}{" + weekday_formatted + "}{" + time_formatted + "}"
-                        arr_latex_newlines.append(command_string + "\n")
-                        # command_string = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + time_formatted + "}" # --> With URL to course page. Useless since you have to restart a session anyway
-                        if PRINT_VERBOSE:
-                            # If the user wants everything printed
-                            print(command_string) # Print the LaTeX line
+                        t_1_h = meeting["Time"].split(":")[0] # Hour, 0-23
+                        t_1_m = meeting["Time"].split(":")[1] # Min,  00-59
+                        t_1 = datetime.datetime.strptime(t_1_h + ":" + t_1_m, "%H:%M")
+                        t_2 = t_1 + datetime.timedelta(minutes=int(meeting["Duration"]))
+                        t_2 = meeting["Time"] + "-" + str(int(t_2.strftime("%H"))) + ":" + str(t_2.strftime("%M"))
+                        latex_newline = "\t\\" + type + "{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+                        # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
+                        arr_latex_newlines.append(latex_newline)
+                        if PRINT_VERBOSE: # If user wants everything printed
+                            print(latex_newline) # Print the LaTeX line
                     # else:
                     #     print(f"{str_prefix_err} {course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type}")
     print(f"{str_prefix_info} {num_meetings_query} items")
-    # If there is at least 1 result
     if num_meetings_query > 0:
+        # If there is at least 1 result
         # Make substitutions for things line title, room, etc.
         for line_num, line in enumerate(lines_template):
             if "[FILENAME]" in line:
