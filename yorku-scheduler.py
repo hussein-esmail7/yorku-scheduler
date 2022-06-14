@@ -2,14 +2,15 @@
 yorku-scheduler.py
 Hussein Esmail
 Created: 2022 06 09
-Updated: 2022 06 09
+Updated: 2022 06 13
 Description: [DESCRIPTION]
 '''
 
 import os
 import sys
 import json
-import datetime
+from datetime import datetime as dt
+from datetime import timedelta as td
 
 # ========= VARIABLES ===========
 PATH_TEMPLATE   = os.path.expanduser("./timetable.tex")
@@ -40,6 +41,27 @@ str_prefix_err          = f"[{color_red}ERROR{color_end}]\t "
 str_prefix_info         = f"[{color_cyan}INFO{color_end}]\t "
 str_prefix_done         = f"[{color_green}DONE{color_end}]\t "
 
+# TODO: Ask the user what term they want to show based on the returned results
+# TODO: If the user selects SU term, note that there might be conflights on the
+#       schedule.
+# TODO: If user picked to display SU semester, display 2 tables, one for S1,
+#       one for S2
+
+def ask_int(question):
+    bool_continue_asking_q = True
+    ans = ""
+    while bool_continue_asking_q:
+        ans = input(f"{str_prefix_q} {question} ")
+        try:
+            ans = int(ans.strip())
+            if ans < 1:
+                print(f"{str_prefix_err} Must be a positive number!")
+            else:
+                bool_continue_asking_q = False
+        except:
+            print(f"{str_prefix_err} Input a number and no other characters!")
+    return ans
+
 
 def yes_or_no(str_ask):
     while True:
@@ -61,7 +83,6 @@ def main():
     FILENAME_OUTPUT = "test.tex" # LaTeX file name. User changes this later
     PATH_JSON = "" # Path of JSON file will be here
     index_insert = -1 # Index where to put new LaTeX lines in the template file
-    num_meetings_query = 0 # How many results there are
     #   The above variable is useful because if there's 0 queries, there's no
     #   point of making a `.tex` file.
     arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
@@ -98,39 +119,85 @@ def main():
         bool_location_confirmed = yes_or_no(f"Is '{location}' correct? ")
 
     # Iterate the JSON and return the matching items
+    queries = [] # Semesters of the returned queries. Only matters if found more than 1 type
+    # Dict format of `queries`:
+    # {
+    #   "Department" -> LE, AP, GS, ...
+    #   "Code" -> EECS/ADMS/EN/ENG/...
+    #   "Num" -> 1000, 1001, 2001, etc.
+    #   "Section" -> A, B, C, ...
+    #   "Type" -> LECT, TUTR, SEMR, LAB, ...
+    #   "Day" -> MTWRF
+    #   "Duration" -> String of a number in minutes
+    #   "Time" -> 14:00, 9:30, ...
+    #   "Location" -> Building and room number
+    #   "Term" -> F, W, SU, S1, S2, etc.
+    # }
+    terms = []
     for course in DATA:
         # For every course
         for section in course["Sections"]:
             # For all sections in the course
             for type in ["LECT", "TUTR", "LAB", "SEMR"]:
                 # Iterate through all the lectures, tutorials, labs it may have
-                # This loop is not a query loop per se
                 for meeting in section[type]:
                     if meeting["Location"] == location:
-                        # If this item is in that room
-                        num_meetings_query += 1
+                        # If this item is in that room, add it to `queries`
+                        # The reason this is not processed into the file is
+                        # because there may be multiple terms in the JSON file.
+                        # Even an SU vs S1 could be an issue (especially if
+                        # there's an S2 course at the same time)
                         num = ""
-                        if type != "LECT" and type != "SEMR":
-                            num = " " + meeting["Num"]
-                        # print(f"{course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type} {num}{meeting['Day']} {meeting['Time']} for {meeting['Duration']} minutes.")
-                        weekday_formatted = meeting["Day"]
-                        if weekday_formatted == "R":
-                            weekday_formatted = "Th"
-                        # Calculate ending time
-                        t_1_h = meeting["Time"].split(":")[0] # Hour, 0-23
-                        t_1_m = meeting["Time"].split(":")[1] # Min,  00-59
-                        t_1 = datetime.datetime.strptime(t_1_h + ":" + t_1_m, "%H:%M")
-                        t_2 = t_1 + datetime.timedelta(minutes=int(meeting["Duration"]))
-                        t_2 = meeting["Time"] + "-" + str(int(t_2.strftime("%H"))) + ":" + str(t_2.strftime("%M"))
-                        latex_newline = "\t\\" + type + "{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
-                        # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
-                        arr_latex_newlines.append(latex_newline)
-                        if PRINT_VERBOSE: # If user wants everything printed
-                            print(latex_newline) # Print the LaTeX line
-                    # else:
-                    #     print(f"{str_prefix_err} {course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type}")
-    print(f"{str_prefix_info} {num_meetings_query} items")
-    if num_meetings_query > 0:
+                        if type != "LECT" and type != "SEMR": # Error handling
+                            # Since LECT and SEMR doesn't have this value
+                            num = meeting["Num"]
+                        terms.append(section["Term"])
+                        queries.append({
+                                "Department": course["Department"],
+                                "Code": course["Code"],
+                                "Num": course["Num"], # 1000, 2030, etc.
+                                "Section": section["Code"],
+                                "Type": type,
+                                "Num2": num, # The 02 in TUTR 02
+                                "Day": meeting["Day"],
+                                "Duration": meeting["Duration"],
+                                "Time": meeting["Time"],
+                                "Location": meeting["Location"],
+                                "Term": section["Term"]
+                            })
+    terms = sorted(list(dict.fromkeys(terms))) # Remove duplicates
+    term_use = terms[0]
+    if len(terms) > 1:
+        print(f"{str_prefix_info} {len(terms)} semester options:")
+        for term_num, term in enumerate(terms):
+            print(f"\t{term_num+1}. {term}")
+        term_use = terms[ask_int(f"Which semester do you want to use?")-1]
+
+
+
+    for query in queries:
+        if query["Term"] == term_use:
+            num = ""
+            if query["Type"] != "LECT" and query["Type"] != "SEMR":
+                num = " " + query["Num2"]
+            # print(f"{course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type} {num}{meeting['Day']} {meeting['Time']} for {meeting['Duration']} minutes.")
+            weekday_formatted = query["Day"]
+            if weekday_formatted == "R":
+                weekday_formatted = "Th"
+            # Calculate ending time
+            t_1_h = query["Time"].split(":")[0] # Hour, 0-23
+            t_1_m = query["Time"].split(":")[1] # Min,  00-59
+            t_1 = dt.strptime(t_1_h + ":" + t_1_m, "%H:%M")
+            t_2 = t_1 + td(minutes=int(query["Duration"]))
+            t_2 = query["Time"] + "-" + str(int(t_2.strftime("%H"))) + ":" + str(t_2.strftime("%M"))
+            latex_newline = "\t\\" + query["Type"] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+            print(latex_newline, end="")
+            # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
+            arr_latex_newlines.append(latex_newline)
+            if PRINT_VERBOSE: # If user wants everything printed
+                print(latex_newline) # Print the LaTeX line
+    print(f"{str_prefix_info} {len(queries)} items")
+    if len(queries) > 0:
         # If there is at least 1 result
         # Make substitutions for things line title, room, etc.
         for line_num, line in enumerate(lines_template):
