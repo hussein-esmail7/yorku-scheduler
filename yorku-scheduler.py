@@ -20,6 +20,7 @@ PATH_JSON       = ""
 DATA            = [] # JSON data will go here
 location        = "" # User-inputted location query
 LINE_INSERT     = "[CLASSES START]"
+LINE_CLASSES_INSERT     = "[CLASS LIST START]"
 PRINT_VERBOSE   = False
 
 # ========= COLOR CODES =========
@@ -41,11 +42,27 @@ str_prefix_err          = f"[{color_red}ERROR{color_end}]\t "
 str_prefix_info         = f"[{color_cyan}INFO{color_end}]\t "
 str_prefix_done         = f"[{color_green}DONE{color_end}]\t "
 
-# TODO: Ask the user what term they want to show based on the returned results
-# TODO: If the user selects SU term, note that there might be conflights on the
-#       schedule.
 # TODO: If user picked to display SU semester, display 2 tables, one for S1,
 #       one for S2
+
+def semesters_accepted(current_sem):
+    # In a school year, one semester doesn't happen at one time, multiple
+    # happen at once. During F term, Y courses are going on, S1 happens during
+    # SU, etc.
+    if current_sem == "Y":
+        return ["Y", "F", "W"]
+    elif current_sem == "F":
+        return ["Y", "F"]
+    elif current_sem == "W":
+        return ["Y", "W"]
+    elif current_sem == "SU":
+        return ["SU", "S1", "S2"]
+    elif current_sem == "S1":
+        return ["SU", "S1"]
+    elif current_sem == "S2":
+        return ["SU", "S2"]
+    else:
+        return [current_sem]
 
 def ask_int(question):
     bool_continue_asking_q = True
@@ -82,7 +99,8 @@ def main():
     # ========= VARIABLES ===========
     FILENAME_OUTPUT = "test.tex" # LaTeX file name. User changes this later
     PATH_JSON = "" # Path of JSON file will be here
-    index_insert = -1 # Index where to put new LaTeX lines in the template file
+    index_insert = -1 # Index where to put schedule lines in the template file
+    index_classes_insert = -1 # Index where to put class list in the template file
     #   The above variable is useful because if there's 0 queries, there's no
     #   point of making a `.tex` file.
     arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
@@ -95,6 +113,8 @@ def main():
     for line_num, line in enumerate(lines_template):
         if LINE_INSERT in line:
             index_insert = line_num
+        if LINE_CLASSES_INSERT in line:
+            index_class_insert = line_num
     if index_insert == -1:
         print(f"{str_prefix_err} No insert line in template file! Expected: '{LINE_INSERT}'")
         sys.exit()
@@ -156,6 +176,7 @@ def main():
                                 "Department": course["Department"],
                                 "Code": course["Code"],
                                 "Num": course["Num"], # 1000, 2030, etc.
+                                "Year": section["Year"], # Actual year
                                 "Section": section["Code"],
                                 "Type": type,
                                 "Num2": num, # The 02 in TUTR 02
@@ -173,12 +194,12 @@ def main():
             print(f"\t{term_num+1}. {term}")
         term_use = terms[ask_int(f"Which semester do you want to use?")-1]
 
-
-
     for query in queries:
-        if query["Term"] == term_use:
-            num = ""
-            if query["Type"] != "LECT" and query["Type"] != "SEMR":
+        if query["Term"] == term_use or query["Term"] in semesters_accepted(term_use):
+            # If it is the same term as the query, or if the user chose SU,
+            # Still include S1 and S2 classes since it happens at the same time
+            num = ""  # "02" from "TUTR 02". Only used in labs and tutorials
+            if query["Type"] == "TUTR" or query["Type"] == "LAB":
                 num = " " + query["Num2"]
             # print(f"{course['Department']}/{course['Code']} {course['Num']} {section['Code']} - {type} {num}{meeting['Day']} {meeting['Time']} for {meeting['Duration']} minutes.")
             weekday_formatted = query["Day"]
@@ -190,13 +211,38 @@ def main():
             t_1 = dt.strptime(t_1_h + ":" + t_1_m, "%H:%M")
             t_2 = t_1 + td(minutes=int(query["Duration"]))
             t_2 = query["Time"] + "-" + str(int(t_2.strftime("%H"))) + ":" + str(t_2.strftime("%M"))
-            latex_newline = "\t\\" + query["Type"] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
-            print(latex_newline, end="")
+            if term_use != query["Term"]:
+                # If the selected term is not the same as this class's term.
+                # Only options are S1 or S2 because otherwise it would have
+                # been stopped before it reaches this point.
+                num += f" ({query['Term']})"
+            latex_newline = "\t\\" + query["Type"].split(" ")[0] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+            # print(latex_newline, end="")
             # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
             arr_latex_newlines.append(latex_newline)
             if PRINT_VERBOSE: # If user wants everything printed
                 print(latex_newline) # Print the LaTeX line
     print(f"{str_prefix_info} {len(queries)} items")
+
+    class_list = []
+    if len(semesters_accepted(term_use)) > 2:
+        # len(semesters_accepted(term_use)) > 2 explanation:
+        # Only SU and Y terms qualify this. The issue is that the schedule
+        # library in LaTeX does not show multiple events at once, so it takes
+        # the most recent like of the conflicting ones. This means that it may
+        # skip classes. So that there's no data loss, display a list of all the
+        # classes and times normally along with what term it actually is
+        for query in queries:
+            num = ""
+            if query["Type"] == "TUTR" or query["Type"] == "LAB":
+                num = " " + query["Num2"]
+            if term_use != query["Term"]:
+                num += f" ({query['Term']})"
+            class_list.append("\t\\item " + query['Code'] + " " + query["Num"] + " " + query["Section"] + " " + query["Type"] + num + " " + weekday_formatted + " " + t_2 + "\n")
+        class_list = ["All classes in this semester\\footnote{When displaying Y or SU term, there may be conflicts between F/W or S1/S2}\n", "\\begin{itemize*}\n"] + class_list + ["\\end{itemize*}\n"]
+
+
+
     if len(queries) > 0:
         # If there is at least 1 result
         # Make substitutions for things line title, room, etc.
@@ -204,16 +250,25 @@ def main():
             if "[FILENAME]" in line:
                 lines_template[line_num] = lines_template[line_num].replace("[FILENAME]", FILENAME_OUTPUT)
             if "[DESCRIPTION]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location}") # TODO: Include the year and semester here later
+                lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} in {query['Year']} {term_use}")
             if "[TITLE]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location}") # TODO: Include the year and semester here later
-        lines_new = lines_template[:index_insert] + arr_latex_newlines + lines_template[index_insert+1:]
+                lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
+        lines_new = lines_template[:index_insert] + arr_latex_newlines + lines_template[index_insert+1:index_class_insert] + class_list + lines_template[index_class_insert+1:]
         confirmed_filename = False
         while not confirmed_filename:
             FILENAME_OUTPUT = input(f"{str_prefix_q} What would you like to name the output `.tex` file: ")
-            if not FILENAME_OUTPUT.endswith(".tex"):
-                FILENAME_OUTPUT = FILENAME_OUTPUT + ".tex"
-            confirmed_filename = yes_or_no(f"Is '{FILENAME_OUTPUT}' correct? ")
+            if len(FILENAME_OUTPUT) == 0:
+                # If the user didn't type anything, give a error + keep asking
+                print(f"{str_prefix_err} You must input a file name!")
+            else:
+                # If the user has inputted a file name, check its validity
+                if not FILENAME_OUTPUT.endswith(".tex"):
+                    FILENAME_OUTPUT = FILENAME_OUTPUT + ".tex"
+                if os.path.exists(FILENAME_OUTPUT):
+                    # Make sure you are not overwriting an existing file
+                    print(f"{str_prefix_err} {FILENAME_OUTPUT} already exists! Please pick a different file name.")
+                else:
+                    confirmed_filename = yes_or_no(f"Is '{FILENAME_OUTPUT}' correct? ")
         open(FILENAME_OUTPUT, "w").writelines(lines_new)
         print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
         if len(PATH_SCRIPT) > 0:
