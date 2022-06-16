@@ -8,7 +8,8 @@ Description: [DESCRIPTION]
 
 import os
 import sys
-import json
+import json # Used to parse JSON data file to program
+import getopt # Used to get argument information
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -21,7 +22,8 @@ DATA            = [] # JSON data will go here
 location        = "" # User-inputted location query
 LINE_INSERT     = "[CLASSES START]"
 LINE_CLASSES_INSERT     = "[CLASS LIST START]"
-PRINT_VERBOSE   = False
+BOOL_PRINT_VERBOSE   = False
+BOOL_PRINTS     = True
 
 # ========= COLOR CODES =========
 color_end               = '\033[0m'
@@ -44,6 +46,14 @@ str_prefix_done         = f"[{color_green}DONE{color_end}]\t "
 
 # TODO: If user picked to display SU semester, display 2 tables, one for S1,
 #       one for S2
+
+def valid_sem(semester):
+    # Check if the semester input is a valid semester. Return "" otherwise
+    valid_semesters = ["Y", "F", "W", "SU", "S1", "S2"]
+    if semester in valid_semesters:
+        return semester
+    else:
+        return ""
 
 def semesters_accepted(current_sem):
     # In a school year, one semester doesn't happen at one time, multiple
@@ -97,6 +107,9 @@ def yes_or_no(str_ask):
 
 def main():
     # ========= VARIABLES ===========
+    term_use = "" # Semester choice if there are multiple options
+    confirmed_filename = False # True when a safe file name has been set
+    bool_location_confirmed = False # True when a building and room is set
     FILENAME_OUTPUT = "test.tex" # LaTeX file name. User changes this later
     PATH_JSON = "" # Path of JSON file will be here
     index_insert = -1 # Index where to put schedule lines in the template file
@@ -105,6 +118,45 @@ def main():
     #   point of making a `.tex` file.
     arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
 
+    # USER ARGUMENT PARSING
+    args = sys.argv
+    if len(args) > 1:
+        # args[0] = file name, ignore this
+        for arg_num, arg in enumerate(args[1:]):
+            if arg == "-h" or arg == "--help":
+                print("--- yorku-scheduler.py ---")
+                print("https://github.com/hussein-esmail7/yorku-scheduler")
+                print()
+                print("Arguments:")
+                print("\t-h, --help\tHelp message and exit program.")
+                print("\t-j, --json\tInput the JSON path as a string.")
+                print("\t-o, --output\tInput the output file name as a string.")
+                print("\t-r, --room\tInput the room as a string.")
+                print("\t-s, --sem, --semester\n\t\t\tInput the semester you want as a string.")
+                print("\t-q, --quiet\tQuiet mode. Only display text when required.")
+                sys.exit()
+            elif arg == "-j" or arg == "--json":
+                # User inputs the JSON location in the next arg
+                PATH_JSON = args[arg_num+2]
+                if not os.path.exists(os.path.expanduser(PATH_JSON)):
+                    # If JSON not found, reset the variable to ask again later
+                    print(f"{str_prefix_err} JSON file not found!")
+                    PATH_JSON = ""
+            elif arg == "-o" or arg == "--output": # .tex file name
+                FILENAME_OUTPUT = args[arg_num+2]
+            elif arg == "-r" or arg == "--room":
+                # User inputs the room in the next arg
+                location = args[arg_num+2].strip().upper()
+                if len(location.split(" ")) != 2:
+                    # If it is not exactly 2 words
+                    print(f"{str_prefix_err} The building and room must be 2 words!")
+                else:
+                    bool_location_confirmed = True
+            elif arg == "-s" or arg == "--sem" or arg == "--semester":
+                # User inputs the semester they want in the next arg
+                term_use = valid_sem(args[arg_num+2])
+            elif arg == "-q" or arg == "--quiet":
+                BOOL_PRINTS = False
     # Check the template file location is correct before asking user questions
     if not os.path.exists(PATH_TEMPLATE):
         print(f"{str_prefix_err} Template file does not exist at location!")
@@ -128,15 +180,18 @@ def main():
     f = open(PATH_JSON)
     DATA = json.load(f)
     f.close()
-    print(f"{str_prefix_info} Loaded JSON file")
+    if BOOL_PRINTS:
+        print(f"{str_prefix_info} Loaded JSON file")
     # Ask the user for the building and room
-    bool_location_confirmed = False
     while not bool_location_confirmed:
         location = input(f"{str_prefix_q} Input the building and room number: ")
         # Format the user input
-        # location = ''.join(location.split()) # Remove duplicate spaces
-        location = location.upper() # Capitalize everything
-        bool_location_confirmed = yes_or_no(f"Is '{location}' correct? ")
+        location = location.strip().upper() # Capitalize everything
+        if len(location.split(" ")) != 2:
+            # If it is not exactly 2 words
+            print(f"{str_prefix_err} The building and room must be 2 words!")
+        else:
+            bool_location_confirmed = yes_or_no(f"Is '{location}' correct? ")
 
     # Iterate the JSON and return the matching items
     queries = [] # Semesters of the returned queries. Only matters if found more than 1 type
@@ -187,12 +242,15 @@ def main():
                                 "Term": section["Term"]
                             })
     terms = sorted(list(dict.fromkeys(terms))) # Remove duplicates
-    term_use = terms[0]
-    if len(terms) > 1:
+    if len(terms) > 1 and term_use == "":
+        # If a term has not been specified and requires specification
         print(f"{str_prefix_info} {len(terms)} semester options:")
         for term_num, term in enumerate(terms):
             print(f"\t{term_num+1}. {term}")
         term_use = terms[ask_int(f"Which semester do you want to use?")-1]
+    else:
+        # Set the term to use as the only available option
+        term_use = terms[0]
 
     for query in queries:
         if query["Term"] == term_use or query["Term"] in semesters_accepted(term_use):
@@ -220,9 +278,10 @@ def main():
             # print(latex_newline, end="")
             # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
             arr_latex_newlines.append(latex_newline)
-            if PRINT_VERBOSE: # If user wants everything printed
+            if BOOL_PRINT_VERBOSE: # If user wants everything printed
                 print(latex_newline) # Print the LaTeX line
-    print(f"{str_prefix_info} {len(queries)} items")
+    if BOOL_PRINTS:
+        print(f"{str_prefix_info} {len(queries)} items")
 
     class_list = []
     if len(semesters_accepted(term_use)) > 2:
@@ -254,9 +313,19 @@ def main():
             if "[TITLE]" in line:
                 lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
         lines_new = lines_template[:index_insert] + arr_latex_newlines + lines_template[index_insert+1:index_class_insert] + class_list + lines_template[index_class_insert+1:]
-        confirmed_filename = False
-        while not confirmed_filename:
-            FILENAME_OUTPUT = input(f"{str_prefix_q} What would you like to name the output `.tex` file: ")
+        # If the user inputted the filename using "-o" or "--output"
+        # Check its validity (if it would overwrite a file)
+        if len(FILENAME_OUTPUT) != 0:
+            if not FILENAME_OUTPUT.endswith(".tex"):
+                FILENAME_OUTPUT = FILENAME_OUTPUT + ".tex"
+            if os.path.exists(FILENAME_OUTPUT):
+                # Make sure you are not overwriting an existing file
+                print(f"{str_prefix_err} {FILENAME_OUTPUT} already exists!")
+            else:
+                # When it is a safe file name
+                confirmed_filename = True
+        while not confirmed_filename: # If the program still needs a file name
+            FILENAME_OUTPUT = input(f"{str_prefix_q} What would you like to name the output `.tex` file: ").strip()
             if len(FILENAME_OUTPUT) == 0:
                 # If the user didn't type anything, give a error + keep asking
                 print(f"{str_prefix_err} You must input a file name!")
@@ -270,9 +339,11 @@ def main():
                 else:
                     confirmed_filename = yes_or_no(f"Is '{FILENAME_OUTPUT}' correct? ")
         open(FILENAME_OUTPUT, "w").writelines(lines_new)
-        print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
+        if BOOL_PRINTS:
+            print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
         if len(PATH_SCRIPT) > 0:
-            print(f"{str_prefix_info} Detected post-script. Running...")
+            if BOOL_PRINTS:
+                print(f"{str_prefix_info} Detected post-script. Running...")
             os.system(f"{PATH_SCRIPT} \"{FILENAME_OUTPUT}\"")
     sys.exit()
 
