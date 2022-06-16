@@ -23,7 +23,6 @@ location        = "" # User-inputted location query
 LINE_INSERT     = "[CLASSES START]"
 LINE_CLASSES_INSERT     = "[CLASS LIST START]"
 BOOL_PRINT_VERBOSE   = False
-BOOL_PRINTS     = True
 
 # ========= COLOR CODES =========
 color_end               = '\033[0m'
@@ -107,6 +106,7 @@ def yes_or_no(str_ask):
 
 def main():
     # ========= VARIABLES ===========
+    BOOL_PRINTS     = True
     term_use = "" # Semester choice if there are multiple options
     confirmed_filename = False # True when a safe file name has been set
     bool_location_confirmed = False # True when a building and room is set
@@ -248,9 +248,13 @@ def main():
         for term_num, term in enumerate(terms):
             print(f"\t{term_num+1}. {term}")
         term_use = terms[ask_int(f"Which semester do you want to use?")-1]
-    else:
+    elif len(terms) > 0:
         # Set the term to use as the only available option
+        # If there are terms available
         term_use = terms[0]
+    elif BOOL_PRINTS and len(queries) == 0 and len(terms) == 0:
+        print(f"{str_prefix_err} No items found.")
+        sys.exit() # If no terms, no point in continuing program
 
     for query in queries:
         if query["Term"] == term_use or query["Term"] in semesters_accepted(term_use):
