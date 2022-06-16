@@ -44,9 +44,18 @@ python3 yorku-scheduler.py <args>
 ```
 
 ### Arguments
-At the moment, there is not functionality to input your options right in the
-command line, but this will be added later. At the moment, the program will ask
-you for these options directly after you start it.
+Here are possible arguments you can call in Terminal:
+```
+-h, --help --> Help message and exit program.
+-j, --json --> Input the JSON path as a string.
+-o, --output --> Input the output file name as a string.
+-r, --room --> Input the room as a string.
+-s, --sem, --semester --> Input the semester you want as a string.
+-q, --quiet --> Quiet mode. Only display text when required.
+```
+
+Example:
+`python3 yorku-scheduler.py -j "../yorku-class-scraper/json/su_2022_all.json" -r "db 0011" -o "test2.tex" -q -s "SU"`
 
 ## Donate
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/husseinesmail)
