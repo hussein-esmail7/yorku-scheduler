@@ -1,5 +1,5 @@
 # yorku-scheduler
-Formats output from yorku-class-scraper to a timetable PDF
+Formats JSON output from [yorku-class-scraper](https://github.com/hussein-esmaily/yorku-class-scraper) to a LaTeX timetable PDF.
 
 ## Table of Contents
 - [What is this?](#what-is-this)
@@ -9,6 +9,7 @@ Formats output from yorku-class-scraper to a timetable PDF
     - [Installing Through Git](#installing-through-git)
 - [Running the Program](#running-the-program)
 - [Arguments](#arguments)
+- [Files in this Repository](#files-in-this-repository)
 - [Donate](#donate)
 
 ## What is this?
@@ -43,7 +44,7 @@ To use this program, you have to make sure you are in the correct directory
 python3 yorku-scheduler.py <args>
 ```
 
-### Arguments
+## Arguments
 Here are possible arguments you can call in Terminal:
 ```
 -h, --help --> Help message and exit program.
@@ -56,6 +57,11 @@ Here are possible arguments you can call in Terminal:
 
 Example:
 `python3 yorku-scheduler.py -j "../yorku-class-scraper/json/su_2022_all.json" -r "db 0011" -o "test2.tex" -q -s "SU"`
+
+## Files in this Repository
+- `yorku_scheduler.py`: Main Python program that is run.
+- `timetable.tex`: Template file that `yorku_scheduler.py` uses to make its
+  final output file.
 
 ## Donate
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/husseinesmail)
