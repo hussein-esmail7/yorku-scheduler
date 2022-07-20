@@ -211,36 +211,33 @@ def main():
     terms = []
     for course in DATA:
         # For every course
-        for section in course["Sections"]:
-            # For all sections in the course
-            for type in ["LECT", "TUTR", "LAB", "SEMR"]:
-                # Iterate through all the lectures, tutorials, labs it may have
-                for meeting in section[type]:
-                    if meeting["Location"] == location:
-                        # If this item is in that room, add it to `queries`
-                        # The reason this is not processed into the file is
-                        # because there may be multiple terms in the JSON file.
-                        # Even an SU vs S1 could be an issue (especially if
-                        # there's an S2 course at the same time)
-                        num = ""
-                        if type != "LECT" and type != "SEMR": # Error handling
-                            # Since LECT and SEMR doesn't have this value
-                            num = meeting["Num"]
-                        terms.append(section["Term"])
-                        queries.append({
-                                "Department": course["Department"],
-                                "Code": course["Code"],
-                                "Num": course["Num"], # 1000, 2030, etc.
-                                "Year": section["Year"], # Actual year
-                                "Section": section["Code"],
-                                "Type": type,
-                                "Num2": num, # The 02 in TUTR 02
-                                "Day": meeting["Day"],
-                                "Duration": meeting["Duration"],
-                                "Time": meeting["Time"],
-                                "Location": meeting["Location"],
-                                "Term": section["Term"]
-                            })
+        for meeting in course["Meetings"]:
+            # For all meetings in the course
+            if meeting["Location"] == location:
+                # If this item is in that room, add it to `queries`
+                # The reason this is not processed into the file is
+                # because there may be multiple terms in the JSON file.
+                # Even an SU vs S1 could be an issue (especially if
+                # there's an S2 course at the same time)
+                num = ""
+                if type != "LECT" and type != "SEMR": # Error handling
+                    # Since LECT and SEMR doesn't have this value
+                    num = meeting["Num"]
+                terms.append(course["Term"])
+                queries.append({
+                        "Department": course["Department"],
+                        "Code": course["Code"],
+                        "Num": course["Num"], # 1000, 2030, etc.
+                        # "Year": section["Year"], # Actual year # TODO
+                        "Section": meeting["Section"],
+                        "Type": meeting["Type"],
+                        "Num2": meeting["Num"], # The 02 in TUTR 02
+                        "Day": meeting["Day"],
+                        "Duration": meeting["Duration"],
+                        "Time": meeting["Time"],
+                        "Location": meeting["Location"],
+                        "Term": course["Term"]
+                    })
     terms = sorted(list(dict.fromkeys(terms))) # Remove duplicates
     if len(terms) > 1 and term_use == "":
         # If a term has not been specified and requires specification
@@ -278,7 +275,11 @@ def main():
                 # Only options are S1 or S2 because otherwise it would have
                 # been stopped before it reaches this point.
                 num += f" ({query['Term']})"
-            latex_newline = "\t\\" + query["Type"].split(" ")[0] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+            if query["Type"] in ["LECT", "TUTR", "LAB", "SEMR"]:
+                latex_newline = "\t\\" + query["Type"].split(" ")[0] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+            else:
+                # Automatically use TUTR if it uses an unknown type
+                latex_newline = "\t\\TUTR{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
             # print(latex_newline, end="")
             # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
             arr_latex_newlines.append(latex_newline)
@@ -313,9 +314,11 @@ def main():
             if "[FILENAME]" in line:
                 lines_template[line_num] = lines_template[line_num].replace("[FILENAME]", FILENAME_OUTPUT)
             if "[DESCRIPTION]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} in {query['Year']} {term_use}")
+                lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} for {term_use}")
+                # TODO: Put this back after "Year" has been added: lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} in {query['Year']} {term_use}")
             if "[TITLE]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
+                # TODO: Put this back after "Year" lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
+                lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} for {term_use}")
         lines_new = lines_template[:index_insert] + arr_latex_newlines + lines_template[index_insert+1:index_class_insert] + class_list + lines_template[index_class_insert+1:]
         # If the user inputted the filename using "-o" or "--output"
         # Check its validity (if it would overwrite a file)
