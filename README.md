@@ -68,9 +68,22 @@ At the moment, this section has not been implemented yet.
 
 This section is how you can format your configuration at `~/.config/yorku-scheduler/config`
 
+### Text Formatting
 ```
-SUBTITLE=""
+ITEM_TITLE=""
+ITEM_SUBTITLE=""
 ```
+Defaults:
+```
+ITEM_TITLE="%c %n %a"
+ITEM_SUBTITLE="%t %s"
+```
+Options:
+- `%c`: Course department ("EECS", "ADMS", etc.)
+- `%n`: Course number ("1001" from "EECS 1001")
+- `%a`: Course section ("A", "B", "Z", etc.)
+- `%t`: Meeting Type ("LECT", "TUTR", "BLEN", "SEMR", etc.)
+- `%s`: Semester (if not the chosen one. Ex. If you chose "W", only shows "Y")
 - `%p`: Professor full name
 - `%f`: Professor first name
 - `%l`: Professor last name
@@ -78,16 +91,49 @@ SUBTITLE=""
 - `\\`: New line
 
 ```
-COLOR_LECT="" # Highlight colour for lectures
-COLOR_ELSE="" # Highlight colour for everything else (TUTR, BLEN, SEMR, etc.)
+SUBTITLE=""
+```
+
+### Colours
+The colour codes in this program comes from the `[xcolor](https://ctan.org/pkg/xcolor)` package in [LaTeX](https://www.latex-project.org/).
+
+```
+COLOR_BG_LECT="" # Background colour for lectures
+COLOR_BG_ELSE="" # Background colour for everything else (TUTR, BLEN, etc.)
+
+COLOR_FG_LECT="" # Foreground colour for lectures
+COLOR_FG_ELSE="" # Foreground colour for everything else (TUTR, BLEN, etc.)
 ```
 Defaults:
 ```
-COLOR_LECT="pink"
-COLOR_ELSE="lightgray"
+COLOR_BG_LECT="pink"
+COLOR_BG_ELSE="lightgray"
+COLOR_FG_LECT="black"
+COLOR_FG_ELSE="black"
 ```
 Available colours (only 1 per argument):
-- TODO: Add default xcolor colours
+- `red`
+- `green`
+- `blue`
+- `cyan`
+- `magenta`
+- `yellow`
+- `black`
+- `gray`
+- `white`
+- `darkgray`
+- `lightgray`
+- `brown`
+- `lime`
+- `olive`
+- `orange`
+- `pink`
+- `purple`
+- `teal`
+- `violet`
+For more info about modifying your own template file to add more colour
+options, please go to [this link](https://latex-tutorial.com/color-latex/) at
+https://latex-tutorial.com.
 
 
 ## Donate
