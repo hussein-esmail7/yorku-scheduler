@@ -89,7 +89,7 @@ Options:
 - `%l`: Professor last name
 - `%t`: Professor last name
 - `\\`: New line
-* If at any point the specified field isn't available, the program will skip it.
+> :warning: If at any point the specified field isn't available, the program will skip it.
 
 ### Colours
 The colour codes in this program comes from the `[xcolor](https://ctan.org/pkg/xcolor)` package in [LaTeX](https://www.latex-project.org/).
