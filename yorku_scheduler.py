@@ -2,7 +2,6 @@
 yorku-scheduler.py
 Hussein Esmail
 Created: 2022 06 09
-Updated: 2022 06 13
 Description: [DESCRIPTION]
 '''
 

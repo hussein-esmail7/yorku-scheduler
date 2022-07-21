@@ -63,5 +63,32 @@ Example:
 - `timetable.tex`: Template file that `yorku_scheduler.py` uses to make its
   final output file.
 
+## Configuration
+At the moment, this section has not been implemented yet.
+
+This section is how you can format your configuration at `~/.config/yorku-scheduler/config`
+
+```
+SUBTITLE=""
+```
+- `%p`: Professor full name
+- `%f`: Professor first name
+- `%l`: Professor last name
+- `%t`: Professor last name
+- `\\`: New line
+
+```
+COLOR_LECT="" # Highlight colour for lectures
+COLOR_ELSE="" # Highlight colour for everything else (TUTR, BLEN, SEMR, etc.)
+```
+Defaults:
+```
+COLOR_LECT="pink"
+COLOR_ELSE="lightgray"
+```
+Available colours (only 1 per argument):
+- TODO: Add default xcolor colours
+
+
 ## Donate
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/husseinesmail)
