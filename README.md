@@ -92,7 +92,7 @@ Options:
 > :warning: If at any point the specified field isn't available, the program will skip it.
 
 ### Colours
-The colour codes in this program comes from the `[xcolor](https://ctan.org/pkg/xcolor)` package in [LaTeX](https://www.latex-project.org/).
+The colour codes in this program comes from the [`xcolor`](https://ctan.org/pkg/xcolor) package in [LaTeX](https://www.latex-project.org/).
 
 ```
 COLOR_BG_LECT="" # Background colour for lectures
@@ -128,7 +128,8 @@ Available colours (only 1 per argument):
 - `purple`
 - `teal`
 - `violet`
-For more info about modifying your own template file to add more colour
+
+> For more info about modifying your own template file to add more colour
 options, please go to [this link](https://latex-tutorial.com/color-latex/) at
 https://latex-tutorial.com.
 
