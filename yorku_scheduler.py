@@ -117,6 +117,15 @@ def main():
     #   point of making a `.tex` file.
     arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
 
+    PATH_CONFIG = os.path.expanduser("~/.config/yorku-scheduler/config")
+
+    # TODO: GET CONFIGURATIONS FROM CONFIGURATION FILE
+    # if os.path.exists(PATH_CONFIG):
+    #     lines_config =
+
+    # No else condition, just use the defaults
+
+
     # USER ARGUMENT PARSING
     args = sys.argv
     if len(args) > 1:

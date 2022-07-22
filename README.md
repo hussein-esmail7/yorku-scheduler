@@ -63,51 +63,45 @@ Example:
 - `timetable.tex`: Template file that `yorku_scheduler.py` uses to make its
   final output file.
 
-## Configuration
-At the moment, this section has not been implemented yet.
+## Configuration File
+This section is the arguments you can put into your configuration file at
+`~/.config/yorku-scheduler/config`
 
-This section is how you can format your configuration at `~/.config/yorku-scheduler/config`
+> :warning: At the moment, this section has not been implemented yet.
 
 ### Text Formatting
 ```
-ITEM_TITLE=""
-ITEM_SUBTITLE=""
+ITEM_TITLE={c} {n} {a}
+ITEM_SUBTITLE={t} {s}
 ```
-Defaults:
-```
-ITEM_TITLE="%c %n %a"
-ITEM_SUBTITLE="%t %s"
-```
+> Values above are the default values
+
 Options:
-- `%c`: Course department ("EECS", "ADMS", etc.)
-- `%n`: Course number ("1001" from "EECS 1001")
-- `%a`: Course section ("A", "B", "Z", etc.)
-- `%t`: Meeting Type ("LECT", "TUTR", "BLEN", "SEMR", etc.)
-- `%s`: Semester (if not the chosen one. Ex. If you chose "W", only shows "Y")
-- `%p`: Professor full name
-- `%f`: Professor first name
-- `%l`: Professor last name
-- `%t`: Professor last name
+- `{c}`: Course department ("EECS", "ADMS", etc.)
+- `{n}`: Course number ("1001" from "EECS 1001")
+- `{a}`: Course section ("A", "B", "Z", etc.)
+- `{t}`: Meeting Type ("LECT", "TUTR", "BLEN", "SEMR", etc.)
+- `{s}`: Semester (if not the chosen one. Ex. If you chose "W", only shows "Y")
+- `{p}`: Professor full name
+- `{f}`: Professor first name
+- `{l}`: Professor last name
+- `{t}`: Professor last name
 - `\\`: New line
-> :warning: If at any point the specified field isn't available, the program will skip it.
+> :warning: If at any point the specified field isn't available in your JSON
+> input file, the program will not add it instead of raising an error.
 
 ### Colours
 The colour codes in this program comes from the [`xcolor`](https://ctan.org/pkg/xcolor) package in [LaTeX](https://www.latex-project.org/).
 
 ```
-COLOR_BG_LECT="" # Background colour for lectures
-COLOR_BG_ELSE="" # Background colour for everything else (TUTR, BLEN, etc.)
+COLOR_BG_LECT=pink # Background colour for lectures
+COLOR_BG_ELSE=lightgray # Background colour for everything else (TUTR, BLEN, etc.)
 
-COLOR_FG_LECT="" # Foreground colour for lectures
-COLOR_FG_ELSE="" # Foreground colour for everything else (TUTR, BLEN, etc.)
+COLOR_FG_LECT=black # Foreground colour for lectures
+COLOR_FG_ELSE=black # Foreground colour for everything else (TUTR, BLEN, etc.)
 ```
-Defaults:
-```
-COLOR_BG_LECT="pink"
-COLOR_BG_ELSE="lightgray"
-COLOR_FG_LECT="black"
-COLOR_FG_ELSE="black"
-```
+> Values above are the default values
+
 Available colours (only 1 per argument):
 - `red`
 - `green`
