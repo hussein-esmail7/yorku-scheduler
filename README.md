@@ -23,18 +23,24 @@ It's a separate program because if anyone wants to make something out of just
 [yorku-class-scraper](https://github.com/hussein-esmail7/yorku-class-scraper),
 they can (without all of this LaTeX conversion in this program).
 
-## Requirements
-- python3
-- pdflatex (recommended, for converting `.tex` file to `.pdf`)
-
 ## Installation
-At the moment, you can only `git clone` this repository.
+To install this program, you have to clone this git repository and download the required libraries as well. Instructions below.
 
-### Installing Through Git
+> :note: This assumes you already have python3 installed.
+
 ```
 git clone https://github.com/hussein-esmail7/yorku-scheduler
 cd yorku-scheduler/
+pip install configparser
 ```
+
+### Optional Dependencies
+Since this program outputs a `.tex` file, it's recommended that you do use some
+compiler for LaTeX to PDF. You can paste your file into https://overleaf.com/
+to compile it online easily, but for an offline mode of compilation, I use
+`pdflatex`.
+
+### Requirements
 
 ## Running the program
 To use this program, you have to make sure you are in the correct directory
@@ -58,6 +64,12 @@ Here are possible arguments you can call in Terminal:
 Example:
 `python3 yorku-scheduler.py -j "../yorku-class-scraper/json/su_2022_all.json" -r "db 0011" -o "test2.tex" -q -s "SU"`
 
+## Program Output
+This program outputs a `.tex` LaTeX file. There are multiple ways of comverting this to PDF:
+1. Use an online compiler like [Overleaf](https://overleaf.com/) after the program runs.
+2. Make a script that can run right after this program if you pass the file path of it to the `PATH_POST_SCRIPT` variable in your [config](#configuration-fil) file.
+
+
 ## Files in this Repository
 - `yorku_scheduler.py`: Main Python program that is run.
 - `timetable.tex`: Template file that `yorku_scheduler.py` uses to make its
@@ -67,7 +79,18 @@ Example:
 This section is the arguments you can put into your configuration file at
 `~/.config/yorku-scheduler/config`
 
-> :warning: At the moment, this section has not been implemented yet.
+### Entire Default Config:
+```
+[Default]
+ITEM_TITLE={c} {n} {a}
+ITEM_SUBTITLE={t} {s}
+COLOR_BG_LECT=pink
+COLOR_BG_ELSE=lightgray
+COLOR_FG_LECT=black
+COLOR_FG_ELSE=black
+PATH_POST_SCRIPT=
+PATH_TEMPLATE=./timetable.tex
+```
 
 ### Text Formatting
 ```
@@ -127,6 +150,59 @@ Available colours (only 1 per argument):
 options, please go to [this link](https://latex-tutorial.com/color-latex/) at
 https://latex-tutorial.com.
 
+### Post Script
+This part of the configuration file lets you run another script after the
+output `.tex` file has been created. Personally, I have this set to my
+[`c.sh`](https://github.com/hussein-esmail7/sh/blob/main/c.sh) program that can
+be found at my [hussein-esmail7/sh/](https://github.com/hussein-esmail7/sh/)
+repository. By default, this field is left empty.
+
+```
+PATH_POST_SCRIPT= # Post Script file location here (including arguments)
+```
+
+The Python program runs whatever is in the `PATH_POST_SCRIPT` argument, then
+lastly the file name of the `.tex` file the program just outputted. Please do
+not put quotation marks in this argument even if there are spaces in your
+command.
+
+Example:
+```
+PATH_POST_SCRIPT=python3 compile.py --latex
+```
+What is actually run (where `output.tex` was made by this program):
+```
+python3 compile.py --latex output.tex
+```
+
+### Template LaTeX File
+You can decide what template file this program uses. By default, it's the
+[`timetable.tex`](https://github.com/hussein-esmail7/yorku-scheduler/blob/main/timetable.tex)
+file in this repository, but you can set a different file location. The rest of
+this section explains what this program looks for in that file so that it works
+properly (you can skip it if you're not planning on changing the template
+file).
+
+```
+PATH_TEMPLATE=./timetable.tex
+```
+
+The
+[`timetable.tex`](https://github.com/hussein-esmail7/yorku-scheduler/blob/main/timetable.tex)
+uses the [`schedule`](https://ctan.org/pkg/schedule?lang=en) LaTeX package that generates calendar items.
+
+With the `schedule` package, you can create different appointment types. This program uses `LECT` and `ELSE` (which are where the colour codes are also used). The format the program types these commands are as follows:
+```
+\LECT{Line 1}{Line 2}{Day}{Start Time-End Time}
+\ELSE{Line 1}{Line 2}{Day}{Start Time-End Time}
+```
+
+When the program adds lines, it adds them between the lines that say "`[CLASSES START]`" and "`[CLASSES END]`"
+
+Wherever the program sees "`[COLOR_BG_LECT]`", "`[COLOR_BG_ELSE]`",
+"`[COLOR_FG_LECT]`", or "`[COLOR_FG_ELSE]`", it replaces those strings
+(including the square brackets) with the respective colour found in the config
+file.
 
 ## Donate
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/husseinesmail)

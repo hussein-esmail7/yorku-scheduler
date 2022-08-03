@@ -13,9 +13,8 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 
 # ========= VARIABLES ===========
-PATH_TEMPLATE   = os.path.expanduser("./timetable.tex")
-PATH_SCRIPT     = "" # Optional script to run afterwards, passes tex file
-PATH_SCRIPT     = os.path.expanduser("~/git/sh/c.sh") # From https://github.com/hussein-esmaily/sh/
+PATH_POST_SCRIPT     = "" # Optional script to run afterwards, passes tex file
+PATH_CONFIG = os.path.expanduser("~/.config/yorku-scheduler/config")
 PATH_JSON       = ""
 DATA            = [] # JSON data will go here
 location        = "" # User-inputted location query
@@ -103,6 +102,34 @@ def yes_or_no(str_ask):
             print(f"{str_prefix_err} {error_neither_y_n}")
 
 
+def get_config(PATH_CONFIG):
+    PATH_CONFIG = os.path.expanduser(PATH_CONFIG)
+    config = configparser.ConfigParser()
+    config["Default"] = {
+            "ITEM_TITLE": "{s} {n} {a}",
+            "ITEM_SUBTITLE": "{t} {s}",
+            "COLOR_BG_LECT": "pink",
+            "COLOR_BG_ELSE": "lightgray",
+            "COLOR_FG_LECT": "black",
+            "COLOR_FG_ELSE": "black",
+            "PATH_POST_SCRIPT": "",
+            "PATH_TEMPLATE": "./timetable.tex"
+            }
+    if not os.path.exists(PATH_CONFIG):
+        FOLTER_CONFIG = "/".join(PATH_CONFIG.split("/")[:-1])
+        if not os.path.exists(FOLDER_CONFIG):
+            # Make the config folder if it does not exist
+            os.makedirs(FOLDER_CONFIG)
+        open(PATH_CONFIG, 'w').write(config)
+        print(f"{strPrefix_info} Your config file does not exist! Wrote to {PATH_CONFIG}")
+    config.read(os.path.expanduser("~/.config/yorku-scheduler/config"))
+    if 'Default' not in config.sections():
+        print(f"{str_prefix_err} Your config file needs to have the \"[Default]\" section")
+    if len(config.sections()) != 1:
+        print(f"{str_prefix_err} Your config file can only have 1 section!")
+    return config["Default"]
+
+
 def main():
     # ========= VARIABLES ===========
     BOOL_PRINTS     = True
@@ -117,14 +144,11 @@ def main():
     #   point of making a `.tex` file.
     arr_latex_newlines = [] # Lines to insert into the LaTeX file will go here
 
-    PATH_CONFIG = os.path.expanduser("~/.config/yorku-scheduler/config")
 
-    # TODO: GET CONFIGURATIONS FROM CONFIGURATION FILE
-    # if os.path.exists(PATH_CONFIG):
-    #     lines_config =
-
-    # No else condition, just use the defaults
-
+    # GET CONFIGURATIONS FROM CONFIGURATION FILE
+    DATA_CONFIG = get_config(PATH_CONFIG)
+    PATH_TEMPLATE = DATA_CONFIG["path_template"]
+    PATH_POST_SCRIPT     = os.path.expanduser("~/git/sh/c.sh") # github.com/hussein-esmaily/sh TODO
 
     # USER ARGUMENT PARSING
     args = sys.argv
@@ -319,14 +343,15 @@ def main():
         # If there is at least 1 result
         # Make substitutions for things line title, room, etc.
         for line_num, line in enumerate(lines_template):
-            if "[FILENAME]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[FILENAME]", FILENAME_OUTPUT)
-            if "[DESCRIPTION]" in line:
-                lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} for {term_use}")
-                # TODO: Put this back after "Year" has been added: lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} in {query['Year']} {term_use}")
-            if "[TITLE]" in line:
-                # TODO: Put this back after "Year" lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
-                lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} for {term_use}")
+            lines_template[line_num] = lines_template[line_num].replace("[FILENAME]", FILENAME_OUTPUT)
+            lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} for {term_use}")
+            lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} for {term_use}")
+            lines_template[line_num] = lines_template[line_num].replace("[COLOR_BG_LECT]", DATA_CONFIG["color_bg_lect"])
+            lines_template[line_num] = lines_template[line_num].replace("[COLOR_BG_ELSE]", DATA_CONFIG["color_bg_else"])
+            lines_template[line_num] = lines_template[line_num].replace("[COLOR_FG_LECT]", DATA_CONFIG["color_fg_lect"])
+            lines_template[line_num] = lines_template[line_num].replace("[COLOR_FG_ELSE]", DATA_CONFIG["color_fg_else"])
+            # TODO: Put this back after "Year" has been added: lines_template[line_num] = lines_template[line_num].replace("[DESCRIPTION]", f"Schedule for {location} in {query['Year']} {term_use}")
+            # TODO: Put this back after "Year" lines_template[line_num] = lines_template[line_num].replace("[TITLE]", f"Schedule for {location} in {query['Year']} {term_use}")
         lines_new = lines_template[:index_insert] + arr_latex_newlines + lines_template[index_insert+1:index_class_insert] + class_list + lines_template[index_class_insert+1:]
         # If the user inputted the filename using "-o" or "--output"
         # Check its validity (if it would overwrite a file)
@@ -356,10 +381,10 @@ def main():
         open(FILENAME_OUTPUT, "w").writelines(lines_new)
         if BOOL_PRINTS:
             print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
-        if len(PATH_SCRIPT) > 0:
+        if len(PATH_POST_SCRIPT) > 0:
             if BOOL_PRINTS:
                 print(f"{str_prefix_info} Detected post-script. Running...")
-            os.system(f"{PATH_SCRIPT} \"{FILENAME_OUTPUT}\"")
+            os.system(f"{PATH_POST_SCRIPT} \"{FILENAME_OUTPUT}\"")
     sys.exit()
 
 
