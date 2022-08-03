@@ -11,6 +11,7 @@ import json # Used to parse JSON data file to program
 import getopt # Used to get argument information
 from datetime import datetime as dt
 from datetime import timedelta as td
+import configparser
 
 # ========= VARIABLES ===========
 PATH_POST_SCRIPT     = "" # Optional script to run afterwards, passes tex file
@@ -102,32 +103,35 @@ def yes_or_no(str_ask):
             print(f"{str_prefix_err} {error_neither_y_n}")
 
 
+def fb(str1, str2):
+    # Fallback string, if str1 is empty, return str2
+    # Used in case config args are not given, use defaults
+    if len(str1.strip()) == 0:
+        return str2.strip()
+    return str1.strip()
+
 def get_config(PATH_CONFIG):
     PATH_CONFIG = os.path.expanduser(PATH_CONFIG)
-    config = configparser.ConfigParser()
-    config["Default"] = {
-            "ITEM_TITLE": "{s} {n} {a}",
-            "ITEM_SUBTITLE": "{t} {s}",
-            "COLOR_BG_LECT": "pink",
-            "COLOR_BG_ELSE": "lightgray",
-            "COLOR_FG_LECT": "black",
-            "COLOR_FG_ELSE": "black",
-            "PATH_POST_SCRIPT": "",
-            "PATH_TEMPLATE": "./timetable.tex"
-            }
+    c = configparser.ConfigParser()
     if not os.path.exists(PATH_CONFIG):
-        FOLTER_CONFIG = "/".join(PATH_CONFIG.split("/")[:-1])
+        FOLDER_CONFIG = "/".join(PATH_CONFIG.split("/")[:-1])
         if not os.path.exists(FOLDER_CONFIG):
             # Make the config folder if it does not exist
             os.makedirs(FOLDER_CONFIG)
-        open(PATH_CONFIG, 'w').write(config)
+        open(PATH_CONFIG, 'w').write(c)
         print(f"{strPrefix_info} Your config file does not exist! Wrote to {PATH_CONFIG}")
-    config.read(os.path.expanduser("~/.config/yorku-scheduler/config"))
-    if 'Default' not in config.sections():
-        print(f"{str_prefix_err} Your config file needs to have the \"[Default]\" section")
-    if len(config.sections()) != 1:
-        print(f"{str_prefix_err} Your config file can only have 1 section!")
-    return config["Default"]
+    c.read(os.path.expanduser("~/.config/yorku-scheduler/config"))
+    config1 = {
+            "item_title": c.get("DEFAULT", "item_title", fallback="{s} {n} {a}"),
+            "item_subtitle": c.get("DEFAULT", "item_subtitle", fallback="{t} {s}"),
+            "color_bg_lect": c.get("DEFAULT", "color_bg_lect", fallback="pink"),
+            "color_bg_else": c.get("DEFAULT", "color_bg_else", fallback="lightgray"),
+            "color_fg_lect": c.get("DEFAULT", "color_fg_lect", fallback="black"),
+            "color_fg_else": c.get("DEFAULT", "color_fg_else", fallback="black"),
+            "path_post_script": os.path.expanduser(c.get("DEFAULT", "path_post_script", fallback="")),
+            "path_template": os.path.expanduser(c.get("DEFAULT", "path_template", fallback="./timetable.tex"))
+            }
+    return config1
 
 
 def main():
@@ -148,7 +152,7 @@ def main():
     # GET CONFIGURATIONS FROM CONFIGURATION FILE
     DATA_CONFIG = get_config(PATH_CONFIG)
     PATH_TEMPLATE = DATA_CONFIG["path_template"]
-    PATH_POST_SCRIPT     = os.path.expanduser("~/git/sh/c.sh") # github.com/hussein-esmaily/sh TODO
+    PATH_POST_SCRIPT     = os.path.expanduser(DATA_CONFIG["path_post_script"])
 
     # USER ARGUMENT PARSING
     args = sys.argv
@@ -307,11 +311,15 @@ def main():
                 # Only options are S1 or S2 because otherwise it would have
                 # been stopped before it reaches this point.
                 num += f" ({query['Term']})"
-            if query["Type"] in ["LECT", "TUTR", "LAB", "SEMR"]:
+            if query["Type"] == "LECT":
+                # LECT has its own colour type.
+                # The reason this is separate is to indicate that you could
+                # potentially drop in and also listen to this lecture. This is
+                # less likely in tutorials (TUTR) and seminars (SEMR)
                 latex_newline = "\t\\" + query["Type"].split(" ")[0] + "{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
             else:
                 # Automatically use TUTR if it uses an unknown type
-                latex_newline = "\t\\TUTR{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
+                latex_newline = "\t\\ELSE{" + query['Code'] + " " + query["Num"] + " " + query["Section"] + "}{" + query["Type"] + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n"
             # print(latex_newline, end="")
             # latex_newline = "\t\t\\" + type + "{\\href{" + course['URL'] + "}{" + course['Code'] + " " + course['Num'] + " " + section['Code'] + "}}{" + type + num + "}{" + weekday_formatted + "}{" + t_2 + "}\n" # --> With URL to course page. Useless since you have to restart a session anyway
             arr_latex_newlines.append(latex_newline)
@@ -381,6 +389,7 @@ def main():
         open(FILENAME_OUTPUT, "w").writelines(lines_new)
         if BOOL_PRINTS:
             print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
+        print(PATH_POST_SCRIPT)
         if len(PATH_POST_SCRIPT) > 0:
             if BOOL_PRINTS:
                 print(f"{str_prefix_info} Detected post-script. Running...")
