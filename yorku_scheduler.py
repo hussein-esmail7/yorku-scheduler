@@ -3,6 +3,9 @@ yorku-scheduler.py
 Hussein Esmail
 Created: 2022 06 09
 Description: [DESCRIPTION]
+
+Test command:
+python3 yorku_scheduler.py -s "F" -j "../yorku-class-scraper/json/2022_fw.json" -r "CLH I"
 '''
 
 import os
