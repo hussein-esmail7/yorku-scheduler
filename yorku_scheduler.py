@@ -2,32 +2,34 @@
 yorku-scheduler.py
 Hussein Esmail
 Created: 2022 06 09
-Description: [DESCRIPTION]
+Description: This program generates a LaTeX calendar file for a location at
+    York University based on a given JSON file from
+    https://github.com/hussein-esmail7/yorku-class-scraper
 
 Test command:
 python3 yorku_scheduler.py -s "F" -j "../yorku-class-scraper/json/2022_fw.json" -r "CLH I"
 '''
 
-import os
-import sys
-import json # Used to parse JSON data file to program
-import getopt # Used to get argument information
 from datetime import datetime as dt
 from datetime import timedelta as td
-import configparser
+import configparser     # Used to get configuration file contents
+import getopt           # Used to get argument information
+import json             # Used to parse JSON data file to program
+import os
+import sys
 
 # ========= VARIABLES ===========
-PATH_POST_SCRIPT     = "" # Optional script to run afterwards, passes tex file
-PATH_CONFIG = os.path.expanduser("~/.config/yorku-scheduler/config")
-PATH_JSON       = ""
-DATA            = [] # JSON data will go here
-location        = "" # User-inputted location query
-LINE_INSERT     = "[CLASSES START]"
-LINE_CLASSES_INSERT     = "[CLASS LIST START]"
-BOOL_PRINT_VERBOSE   = False
+PATH_POST_SCRIPT    = "" # Optional script to run afterwards, passes tex file
+PATH_CONFIG         = "~/.config/yorku-scheduler/config"
+PATH_JSON           = ""
+DATA                = [] # JSON data will go here
+location            = "" # User-inputted location query
+LINE_INSERT         = "[CLASSES START]"
+LINE_CLASSES_INSERT = "[CLASS LIST START]"
+BOOL_PRINT_VERBOSE  = False
 
 # ========= COLOR CODES =========
-color_end               = '\033[0m'
+color_end               = '\033[0m'     # Resets color
 color_darkgrey          = '\033[90m'
 color_red               = '\033[91m'
 color_green             = '\033[92m'
@@ -123,7 +125,7 @@ def get_config(PATH_CONFIG):
             os.makedirs(FOLDER_CONFIG)
         open(PATH_CONFIG, 'w').write(c)
         print(f"{strPrefix_info} Your config file does not exist! Wrote to {PATH_CONFIG}")
-    c.read(os.path.expanduser("~/.config/yorku-scheduler/config"))
+    c.read(PATH_CONFIG)
     config1 = {
             "item_title": c.get("DEFAULT", "item_title", fallback="{s} {n} {a}"),
             "item_subtitle": c.get("DEFAULT", "item_subtitle", fallback="{t} {s}"),
@@ -389,15 +391,19 @@ def main():
                     print(f"{str_prefix_err} {FILENAME_OUTPUT} already exists! Please pick a different file name.")
                 else:
                     confirmed_filename = yes_or_no(f"Is '{FILENAME_OUTPUT}' correct? ")
+
+        # Write to file
         open(FILENAME_OUTPUT, "w").writelines(lines_new)
         if BOOL_PRINTS:
             print(f"{str_prefix_done} Wrote to '{FILENAME_OUTPUT}'")
-        print(PATH_POST_SCRIPT)
+
+        # Run post-script (if there is one)
         if len(PATH_POST_SCRIPT) > 0:
             if BOOL_PRINTS:
                 print(f"{str_prefix_info} Detected post-script. Running...")
             os.system(f"{PATH_POST_SCRIPT} \"{FILENAME_OUTPUT}\"")
-    sys.exit()
+
+    sys.exit() # Exit program with no erros
 
 
 if __name__ == "__main__":
